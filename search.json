@@ -18,7 +18,7 @@
     "href": "1-Introduction.html#les-attendus-techniques-du-projet-sont-il-bien-définis",
     "title": "1  Introduction",
     "section": "1.2 Les attendus techniques du projet sont-il bien définis ?",
-    "text": "1.2 Les attendus techniques du projet sont-il bien définis ?\n\nOn voudrait ici être en mesure pour une zone donnée de détecter des apparitions ou disparitions de logement\nA-t’on des données annotées qui nous permettent réellement de le faire ?\n\n\n\n\n\nDirac, P. A. M. 1953. “The Lorentz Transformation and Absolute Time.” Physica 19 (1-–12): 888–96."
+    "text": "1.2 Les attendus techniques du projet sont-il bien définis ?\n\nOn voudrait ici être en mesure pour une zone donnée de détecter des apparitions ou disparitions de logement\nA-t’on des données annotées qui nous permettent réellement de le faire ?\n\n\n\n\n\nDuque, Juan, Jorge Patino, and Alejandro Betancourt. 2017. “Exploring the Potential of Machine Learning for Automatic Slum Identification from VHR Imagery.” Remote Sensing 9 (9): 895. https://doi.org/10.3390/rs9090895.\n\n\nMboga, Nicholus, Claudio Persello, John Bergado, and Alfred Stein. 2017. “Detection of Informal Settlements from VHR Images Using Convolutional Neural Networks.” Remote Sensing 9 (11): 1106. https://doi.org/10.3390/rs9111106."
   },
   {
     "objectID": "2-Image-input.html#une-image-satellite",
@@ -46,6 +46,6 @@
     "href": "references.html",
     "title": "References",
     "section": "",
-    "text": "Dirac, P. A. M. 1953. “The Lorentz Transformation and\nAbsolute Time.” Physica 19 (1-–12): 888–96."
+    "text": "Duque, Juan, Jorge Patino, and Alejandro Betancourt. 2017.\n“Exploring the Potential of Machine\nLearning for Automatic Slum\nIdentification from VHR\nImagery.” Remote Sensing 9 (9): 895. https://doi.org/10.3390/rs9090895.\n\n\nMboga, Nicholus, Claudio Persello, John Bergado, and Alfred Stein. 2017.\n“Detection of Informal Settlements from\nVHR Images Using\nConvolutional Neural\nNetworks.” Remote Sensing 9 (11): 1106. https://doi.org/10.3390/rs9111106."
   }
 ]
