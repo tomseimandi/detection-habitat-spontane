@@ -25,14 +25,18 @@ from classes.optim.losses import CrossEntropy
 from classes.optim.optimizer import generate_optimization_elements
 from data.components.change_detection_dataset import ChangeIsEverywhereDataset
 from data.components.dataset import PleiadeDataset
+from data.components.object_detection_dataset import ObjectDetectionDataset
+from models.components.detection_models import FasterRCNNModule
 from models.components.segmentation_models import DeepLabv3Module
+from models.detection_module import DetectionModule
 from models.segmentation_module import SegmentationModule
 from train_pipeline_utils.download_data import load_satellite_data
 from train_pipeline_utils.prepare_data import (
     check_labelled_images,
+    filter_buildingless,
     filter_images,
     label_images,
-    save_images_and_masks,
+    save_images_and_labels,
 )
 from utils.utils import update_storage_access
 
@@ -88,6 +92,7 @@ def prepare_data(config, list_data_dir):
     deps = config_data["dep"]
     src = config_data["source train"]
     labeler = config_data["type labeler"]
+    task = config_data["task"]
 
     list_output_dir = []
 
@@ -98,6 +103,8 @@ def prepare_data(config, list_data_dir):
             + src
             + "-"
             + labeler
+            + "-"
+            + task
             + "-"
             + dep
             + "-"
@@ -128,7 +135,7 @@ def prepare_data(config, list_data_dir):
                     )
 
                 except RasterioIOError:
-                    print("Errerur de lecture du fichier " + path)
+                    print("Erreur de lecture du fichier " + path)
                     continue
 
                 else:
@@ -141,9 +148,18 @@ def prepare_data(config, list_data_dir):
                     (
                         list_filtered_splitted_labeled_images,
                         list_masks,
-                    ) = label_images(list_filtered_splitted_images, labeler)
+                    ) = label_images(
+                        list_filtered_splitted_images, labeler, task
+                    )
 
-                    save_images_and_masks(
+                    (
+                        list_filtered_splitted_labeled_images,
+                        list_masks,
+                    ) = filter_buildingless(
+                        list_filtered_splitted_labeled_images, list_masks, task
+                    )
+
+                    save_images_and_labels(
                         list_filtered_splitted_labeled_images,
                         list_masks,
                         output_dir,
@@ -151,7 +167,7 @@ def prepare_data(config, list_data_dir):
 
         list_output_dir.append(output_dir)
         nb = len(os.listdir(output_dir + "/images"))
-        print(str(nb) + " couples images/masques retenus")
+        print(str(nb) + " couples images/labels retenus")
 
     return list_output_dir
 
@@ -175,6 +191,7 @@ def intantiate_dataset(config, list_path_images, list_path_labels):
     dataset_dict = {
         "pleiadeDataset": PleiadeDataset,
         "changeIsEverywhere": ChangeIsEverywhereDataset,
+        "object_detection": ObjectDetectionDataset,
     }
 
     dataset_type = config["donnees"]["dataset"]
@@ -258,7 +275,8 @@ def intantiate_dataloader(config, list_output_dir):
     # on applique les transforms respectives
     augmentation = config["donnees"]["augmentation"]
     tile_size = config["donnees"]["tile size"]
-    t_aug, t_preproc = hd.generate_transform(tile_size, augmentation)
+    task = config["donnees"]["task"]
+    t_aug, t_preproc = hd.generate_transform(tile_size, augmentation, task)
     train_dataset.transforms = t_aug
     valid_dataset.transforms = t_preproc
 
@@ -270,7 +288,8 @@ def intantiate_dataloader(config, list_output_dir):
             ds,
             batch_size=batch_size,
             shuffle=boolean,
-            num_workers=2,
+            num_workers=config["donnees"]["num_workers"],
+            collate_fn=hd.collate_fn,
         )
         for ds, boolean in zip([train_dataset, valid_dataset], [True, False])
     ]
@@ -295,7 +314,10 @@ def instantiate_model(config):
         object: Instance of the specified module.
     """
     module_type = config["optim"]["module"]
-    module_dict = {"deeplabv3": DeepLabv3Module}
+    module_dict = {
+        "deeplabv3": DeepLabv3Module,
+        "fasterrcnn": FasterRCNNModule,
+    }
     nchannel = config["donnees"]["n channels train"]
 
     if module_type not in module_dict:
@@ -340,7 +362,13 @@ def instantiate_lightning_module(config, model):
     """
     list_params = generate_optimization_elements(config)
 
-    lightning_module = SegmentationModule(
+    task = config["donnees"]["task"]
+    lightning_module_dict = {
+        "detection": DetectionModule,
+        "segmentation": SegmentationModule,
+    }
+
+    lightning_module = lightning_module_dict[task](
         model=model,
         loss=instantiate_loss(config),
         optimizer=list_params[0],
@@ -365,12 +393,15 @@ def instantiate_trainer(config, lightning_module):
     Returns:
         SegmentationModule: A PyTorch Lightning module for segmentation.
     """
+    monitor = config["optim"]["monitor"]
+    mode = config["optim"]["mode"]
+    patience = config["optim"]["patience"]
     # def callbacks
     checkpoint_callback = ModelCheckpoint(
-        monitor="validation_loss", save_top_k=1, save_last=True, mode="max"
+        monitor=monitor, save_top_k=1, save_last=True, mode=mode
     )
     early_stop_callback = EarlyStopping(
-        monitor="validation_loss", mode="max", patience=3
+        monitor=monitor, mode=mode, patience=patience
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
     list_callbacks = [lr_monitor, checkpoint_callback, early_stop_callback]
@@ -399,7 +430,7 @@ def run_pipeline(remote_server_uri, experiment_name, run_name):
         None
     """
     # Open the file and load the file
-    with open("../config.yml") as f:
+    with open("config.yml") as f:
         config = yaml.load(f, Loader=SafeLoader)
 
     list_data_dir = download_data(config)
@@ -424,10 +455,10 @@ def run_pipeline(remote_server_uri, experiment_name, run_name):
         mlflow.end_run()
         mlflow.set_tracking_uri(remote_server_uri)
         mlflow.set_experiment(experiment_name)
-        # mlflow.pytorch.autolog()
+        mlflow.pytorch.autolog()
 
         with mlflow.start_run(run_name=run_name):
-            mlflow.log_artifact("../config.yml", artifact_path="config.yml")
+            mlflow.log_artifact("config.yml", artifact_path="config.yml")
             trainer.fit(light_module, train_dl, valid_dl)
             # trainer.test(light_module, test_dl)
     else:
