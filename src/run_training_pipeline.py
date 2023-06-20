@@ -63,26 +63,29 @@ def download_data(config):
 
     print("Entre dans la fonction download_data")
     config_data = config["donnees"]
-    list_output_dir = []
-    list_masks_cloud_dir = []
+    if config_data["source_train"] == "PLEIADES": 
+        list_output_dir = []
+        list_masks_cloud_dir = []
+        
+        years = config_data["year"]
+        deps = config_data["dep"]
+        src = config_data["source train"]
+
+        for year, dep in zip(years, deps):
+            # year, dep = years[0], deps[0]
+            if src == "PLEIADES":
+                cloud_dir = load_satellite_data(year, dep, "NUAGESPLEIADES")
+                list_masks_cloud_dir.append(cloud_dir)
+
+            output_dir = load_satellite_data(year, dep, src)
+            list_output_dir.append(output_dir)
+        
+        print("chargement des données test")
+        test_dir = load_donnees_test(type=config["donnees"]["task"])
+
+        return list_output_dir, list_masks_cloud_dir, test_dir
+
     
-    years = config_data["year"]
-    deps = config_data["dep"]
-    src = config_data["source train"]
-
-    for year, dep in zip(years, deps):
-        # year, dep = years[0], deps[0]
-        if src == "PLEIADES":
-            cloud_dir = load_satellite_data(year, dep, "NUAGESPLEIADES")
-            list_masks_cloud_dir.append(cloud_dir)
-
-        output_dir = load_satellite_data(year, dep, src)
-        list_output_dir.append(output_dir)
-    
-    print("chargement des données test")
-    test_dir = load_donnees_test(type=config["donnees"]["task"])
-
-    return list_output_dir, list_masks_cloud_dir, test_dir
 
 
 def prepare_train_data(config, list_data_dir, list_masks_cloud_dir):

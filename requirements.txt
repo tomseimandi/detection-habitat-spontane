@@ -4,7 +4,7 @@ pre-commit
 black
 s3fs
 py7zr
-rasterio
+#prasterio
 torch
 pytorch_lightning
 albumentations

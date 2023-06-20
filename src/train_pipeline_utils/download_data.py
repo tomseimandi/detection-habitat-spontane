@@ -24,32 +24,32 @@ def load_satellite_data(year: int, dep: str, src: str):
     Returns:
         str: The local path where the data is downloaded.
     """
+    if src == "PLEIADES":
+        print("Entre dans la fonction load_satellite_data")
 
-    print("Entre dans la fonction load_satellite_data")
+        update_storage_access()
+        root_path = get_root_path()
+        environment = get_environment()
 
-    update_storage_access()
-    root_path = get_root_path()
-    environment = get_environment()
+        bucket = environment["bucket"]
+        path_s3 = environment["sources"][src][year][dep]
+        path_local = os.path.join(
+            root_path, environment["local-path"][src][year][dep]
+        )
 
-    bucket = environment["bucket"]
-    path_s3 = environment["sources"][src][year][dep]
-    path_local = os.path.join(
-        root_path, environment["local-path"][src][year][dep]
-    )
+        if os.path.exists(path_local):
+            print("Le dossier existe déjà")
+            return path_local
 
-    if os.path.exists(path_local):
-        print("Le dossier existe déjà")
-        return path_local
-
-    fs = s3fs.S3FileSystem(
-        client_kwargs={"endpoint_url": "https://minio.lab.sspcloud.fr"}
-    )
-    print(
-        "download " + src + " " + dep + " " + str(year) + " in " + path_local
-    )
-    fs.download(
-        rpath=f"{bucket}/{path_s3}", lpath=f"{path_local}", recursive=True
-    )
+        fs = s3fs.S3FileSystem(
+            client_kwargs={"endpoint_url": "https://minio.lab.sspcloud.fr"}
+        )
+        print(
+            "download " + src + " " + dep + " " + str(year) + " in " + path_local
+        )
+        fs.download(
+            rpath=f"{bucket}/{path_s3}", lpath=f"{path_local}", recursive=True
+        )
 
     return path_local
 
@@ -93,3 +93,5 @@ def load_donnees_test(type="segmentation"):
     )
 
     return path_local
+
+

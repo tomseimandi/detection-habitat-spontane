@@ -32,7 +32,7 @@ def split_array(array, tile_length):
     
     indices = get_indices_from_tile_length(m, n, tile_length)
     
-    list_array = [array[rows[0] : rows[1], cols[0] : cols[1]] for rows, cols in indices]
+    list_array = [array[rows[0]: rows[1], cols[0] : cols[1]] for rows, cols in indices]
 
     return list_array
 
